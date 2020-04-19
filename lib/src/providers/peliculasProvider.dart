@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'package:peliculas/src/models/actores.dart';
 import 'package:peliculas/src/models/peliculas.dart';
 
 class PeliculasProvider {
@@ -41,7 +42,14 @@ class PeliculasProvider {
   }
 
   Future<List<Pelicula>> getEnCines() async {
-    final url = getUriWithParams('/3/movie/now_playing');
+    final url = Uri.https(
+      _url,
+      '/3/movie/now_playing',
+      {
+        'api_key': _apiKey,
+        'language': _language,
+      },
+    );
     return await _getModeledData(url);
   }
 
@@ -58,5 +66,27 @@ class PeliculasProvider {
 
     _cargando = false;
     return [];
+  }
+
+  Future<List<Actor>> getCasting(String movieId) async {
+    final url = getUriWithParams('/3/movie/$movieId/credits');
+    final response = await http.get(url);
+    final decodeData = json.decode(response.body);
+    final casting = Cast.fromJsonList(decodeData['cast']);
+
+    return casting.items;
+  }
+
+  Future<List<Pelicula>> buscarPeliculas(String query) async {
+    final url = Uri.https(
+      _url,
+      '/3/search/movie',
+      {
+        'api_key': _apiKey,
+        'language': _language,
+        'query': query,
+      },
+    );
+    return await _getModeledData(url);
   }
 }

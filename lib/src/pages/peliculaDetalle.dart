@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
+import 'package:peliculas/src/models/actores.dart';
 import 'package:peliculas/src/models/peliculas.dart';
+
+import 'package:peliculas/src/providers/peliculasProvider.dart';
 
 class PeliculaDetalle extends StatelessWidget {
   @override
@@ -20,9 +24,37 @@ class PeliculaDetalle extends StatelessWidget {
               _getDescripcion(pelicula),
               _getDescripcion(pelicula),
               _getDescripcion(pelicula),
+              _getCasting(pelicula),
             ]),
           )
         ],
+      ),
+    );
+  }
+
+  Widget _createAppBar(Pelicula pelicula) {
+    return SliverAppBar(
+      elevation: 2.0,
+      expandedHeight: 200.0,
+      backgroundColor: Colors.indigoAccent,
+      floating: false,
+      pinned: true,
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
+        title: Text(
+          pelicula.title,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14.0,
+            color: Colors.white,
+          ),
+        ),
+        background: FadeInImage(
+          placeholder: AssetImage('assets/img/loading.gif'),
+          image: NetworkImage(pelicula.getBackgroundImg()),
+          fit: BoxFit.cover,
+          fadeInDuration: Duration(milliseconds: 150),
+        ),
       ),
     );
   }
@@ -33,11 +65,14 @@ class PeliculaDetalle extends StatelessWidget {
       margin: EdgeInsetsDirectional.only(top: 10.0),
       child: Row(
         children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5.0),
-            child: Image(
-              image: NetworkImage(pelicula.getPosterImg()),
-              height: 150.0,
+          Hero(
+            tag: pelicula.uniqueId,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(5.0),
+              child: Image(
+                image: NetworkImage(pelicula.getPosterImg()),
+                height: 150.0,
+              ),
             ),
           ),
           SizedBox(width: 10.0),
@@ -79,29 +114,53 @@ class PeliculaDetalle extends StatelessWidget {
     );
   }
 
-  Widget _createAppBar(Pelicula pelicula) {
-    return SliverAppBar(
-      elevation: 2.0,
-      expandedHeight: 200.0,
-      backgroundColor: Colors.indigoAccent,
-      floating: false,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        title: Text(
-          pelicula.title,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 14.0,
-            color: Colors.white,
+  Widget _getCasting(Pelicula pelicula) {
+    final peliculasProvider = new PeliculasProvider();
+
+    return FutureBuilder(
+        future: peliculasProvider.getCasting(pelicula.id.toString()),
+        builder: (context, AsyncSnapshot<List> snapshot) {
+          return snapshot.hasData
+              ? _getActorPageView(snapshot.data)
+              : Center(child: CircularProgressIndicator());
+        });
+  }
+
+  Widget _getActorPageView(List<Actor> actores) {
+    return SizedBox(
+      height: 200.0,
+      child: PageView.builder(
+        pageSnapping: false,
+        controller: new PageController(
+          viewportFraction: 0.3,
+          initialPage: 1,
+        ),
+        itemCount: actores.length,
+        itemBuilder: (context, i) {
+          return _getActorPage(actores[i]);
+        },
+      ),
+    );
+  }
+
+  Widget _getActorPage(Actor actor) {
+    return Container(
+      child: Column(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5.0),
+            child: FadeInImage(
+              height: 150.0,
+              image: NetworkImage(actor.getImg()),
+              placeholder: AssetImage('assets/img/loading.gif'),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        background: FadeInImage(
-          placeholder: AssetImage('assets/img/loading.gif'),
-          image: NetworkImage(pelicula.getBackgroundImg()),
-          fit: BoxFit.cover,
-          fadeInDuration: Duration(milliseconds: 150),
-        ),
+          Text(
+            actor.name,
+            overflow: TextOverflow.ellipsis,
+          )
+        ],
       ),
     );
   }
